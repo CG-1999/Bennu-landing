@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous Hover-Point Guidance at Bennu</title>
+<meta name="description" content="A 6-DOF guidance, navigation and control pipeline for autonomous approach to a hover point above 101955 Bennu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d12;
+    --bg-panel:#10151d;
+    --bg-panel-2:#141b25;
+    --grid-line: rgba(180,200,220,0.05);
+    --border: #212a36;
+    --border-soft: #1a222c;
+    --text: #dde4ec;
+    --text-dim: #8b96a6;
+    --text-faint: #57616f;
+    --accent: #e2a857;
+    --accent-dim: #a5793c;
+    --accent-2: #5b93b0;
+    --accent-2-dim: #3d6579;
+    --danger: #c96a4f;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 3px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/100% 32px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/32px 100%,
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{ color:var(--accent); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  code, .mono{ font-family:var(--mono); }
+
+  ::selection{ background:var(--accent-dim); color:#0a0d12; }
+
+  /* ---------- Layout shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns: 260px minmax(0,1fr);
+    max-width:1240px;
+    margin:0 auto;
+  }
+
+  @media (max-width: 920px){
+    .shell{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 24px;
+    background:rgba(10,13,18,0.9);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border-soft);
+  }
+  .topbar .mark{
+    font-family:var(--mono); font-size:13px; letter-spacing:.02em; color:var(--text-dim);
+    display:flex; align-items:center; gap:10px;
+  }
+  .topbar .mark b{ color:var(--text); font-weight:600; }
+  .status-pill{
+    font-family:var(--mono); font-size:11.5px;
+    padding:4px 9px;
+    border:1px solid var(--accent-dim);
+    color:var(--accent);
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .status-pill .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--accent); margin-right:6px; position:relative; top:-1px;
+  }
+  .navtoggle{
+    display:none;
+    background:none; border:1px solid var(--border); color:var(--text);
+    font-family:var(--mono); font-size:12px; padding:6px 10px; border-radius:var(--radius); cursor:pointer;
+  }
+  @media (max-width:920px){ .navtoggle{ display:inline-block; } }
+
+  /* ---------- Sidebar nav ---------- */
+  .sidenav{
+    position:sticky; top:53px;
+    align-self:start;
+    height:calc(100vh - 53px);
+    overflow-y:auto;
+    padding:28px 18px 40px 24px;
+    border-right:1px solid var(--border-soft);
+  }
+  .sidenav ol{ list-style:none; margin:0; padding:0; }
+  .sidenav li{ margin:0; }
+  .sidenav a{
+    display:flex; gap:10px; align-items:baseline;
+    color:var(--text-dim); font-size:13.5px;
+    padding:7px 8px; border-radius:var(--radius);
+    border-left:2px solid transparent;
+  }
+  .sidenav a:hover{ color:var(--text); text-decoration:none; background:var(--bg-panel); }
+  .sidenav a.active{ color:var(--text); border-left-color:var(--accent); background:var(--bg-panel); }
+  .sidenav .num{ font-family:var(--mono); font-size:11.5px; color:var(--text-faint); min-width:20px; }
+  .sidenav a.active .num{ color:var(--accent); }
+  .sidenav .foot-links{
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--border-soft);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .sidenav .foot-links a{ font-size:12.5px; color:var(--text-faint); padding:2px 8px; }
+  .sidenav .foot-links a:hover{ color:var(--accent-2); }
+
+  @media (max-width:920px){
+    .sidenav{
+      position:fixed; inset:53px 0 0 0; z-index:20;
+      background:var(--bg); height:auto; bottom:0;
+      transform:translateX(-100%);
+      transition:transform .18s ease;
+    }
+    .sidenav.open{ transform:translateX(0); }
+  }
+
+  /* ---------- Main content ---------- */
+  main{ min-width:0; }
+
+  .hero{
+    padding:64px 40px 48px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .hero .eyebrow{
+    font-family:var(--mono); font-size:12.5px; color:var(--accent-2);
+    margin-bottom:18px;
+  }
+  .hero h1{
+    font-family:var(--sans); font-weight:700;
+    font-size:clamp(28px, 4vw, 42px);
+    line-height:1.18;
+    margin:0 0 18px;
+    max-width:15ch;
+    color:#f2f5f8;
+  }
+  .hero p.lede{
+    font-size:16.5px; color:var(--text-dim); max-width:62ch; margin:0 0 26px;
+  }
+  .hero .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px;
+    font-family:var(--mono); font-size:12.5px; color:var(--text-faint);
+  }
+  .hero .meta-row span b{ color:var(--text-dim); font-weight:500; }
+
+  section{ padding:52px 40px; border-bottom:1px solid var(--border-soft); }
+  section:last-of-type{ border-bottom:none; }
+
+  .section-head{
+    display:flex; align-items:baseline; gap:14px; margin-bottom:22px;
+  }
+  .section-head .num{
+    font-family:var(--mono); font-size:14px; color:var(--accent);
+  }
+  .section-head h2{
+    font-size:22px; margin:0; font-weight:600; color:#f2f5f8;
+  }
+
+  section p{ color:var(--text-dim); max-width:74ch; }
+  section p + p{ margin-top:14px; }
+  section ul, section ol.steps{ max-width:74ch; color:var(--text-dim); padding-left:22px; }
+  section ul li, section ol.steps li{ margin-bottom:8px; }
+
+  .callout{
+    border:1px solid var(--border);
+    background:var(--bg-panel);
+    border-left:3px solid var(--accent);
+    padding:14px 18px;
+    border-radius:var(--radius);
+    font-size:14.5px; color:var(--text-dim);
+    max-width:74ch;
+    margin:18px 0;
+  }
+  .callout.warn{ border-left-color:var(--danger); }
+  .callout b{ color:var(--text); }
+
+  /* stat grid */
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr));
+    gap:1px; background:var(--border-soft);
+    border:1px solid var(--border-soft);
+    max-width:820px; margin-top:8px;
+  }
+  .stat{
+    background:var(--bg-panel); padding:16px 16px 14px;
+  }
+  .stat .v{ font-family:var(--mono); font-size:19px; color:var(--text); }
+  .stat .l{ font-size:11.5px; color:var(--text-faint); margin-top:4px; text-transform:none; }
+
+  /* formula block */
+  .formula{
+    font-family:var(--mono); font-size:13.5px; color:var(--accent-2);
+    background:var(--bg-panel); border:1px solid var(--border);
+    border-radius:var(--radius); padding:14px 18px; margin:16px 0;
+    overflow-x:auto; white-space:pre; max-width:74ch;
+  }
+  .formula .c{ color:var(--text-faint); }
+
+  /* pipeline diagram */
+  .pipeline{ margin:24px 0 8px; }
+  .pipeline svg{ width:100%; height:auto; display:block; }
+
+  /* two column */
+  .twocol{
+    display:grid; grid-template-columns: 1.1fr 0.9fr; gap:36px; align-items:start;
+  }
+  @media (max-width:760px){ .twocol{ grid-template-columns:1fr; } }
+
+  /* code table */
+  .file-table{
+    width:100%; max-width:74ch; border-collapse:collapse; font-size:13.5px; margin-top:10px;
+  }
+  .file-table th{
+    text-align:left; font-family:var(--mono); font-weight:500; font-size:11.5px;
+    color:var(--text-faint); padding:8px 12px; border-bottom:1px solid var(--border);
+  }
+  .file-table td{
+    padding:9px 12px; border-bottom:1px solid var(--border-soft); color:var(--text-dim); vertical-align:top;
+  }
+  .file-table td.f{ font-family:var(--mono); color:var(--accent-2); white-space:nowrap; }
+
+  /* diagram placeholder */
+  .diagram-slot{
+    border:1px dashed var(--border);
+    background:repeating-linear-gradient(135deg, var(--bg-panel), var(--bg-panel) 10px, var(--bg-panel-2) 10px, var(--bg-panel-2) 20px);
+    border-radius:var(--radius);
+    padding:36px 24px;
+    max-width:640px;
+    text-align:center;
+    color:var(--text-faint);
+    font-family:var(--mono); font-size:12.5px;
+    margin:18px 0;
+  }
+  .diagram-slot b{ display:block; color:var(--text-dim); font-family:var(--sans); font-size:14px; margin-bottom:6px; }
+
+  .media-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+    gap:16px; margin-top:18px; max-width:900px;
+  }
+  .media-slot{
+    aspect-ratio:4/3;
+    border:1px dashed var(--border);
+    background:var(--bg-panel);
+    border-radius:var(--radius);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    color:var(--text-faint); font-family:var(--mono); font-size:12px; padding:14px;
+  }
+
+  /* status table */
+  .status-list{ list-style:none; padding:0; margin:14px 0; max-width:74ch; }
+  .status-list li{
+    display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-soft);
+    color:var(--text-dim); font-size:14.5px;
+  }
+  .status-list li .icon{ font-family:var(--mono); color:var(--danger); flex-shrink:0; }
+  .status-list li.ok .icon{ color:var(--accent); }
+
+  footer{
+    padding:40px; color:var(--text-faint); font-size:12.5px; font-family:var(--mono);
+    display:flex; flex-wrap:wrap; gap:8px 20px; justify-content:space-between;
+  }
+  footer a{ color:var(--text-faint); }
+  footer a:hover{ color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">
+    <button class="navtoggle" id="navtoggle" aria-label="Toggle navigation">☰ menu</button>
+    <span><b>101955 Bennu</b> · hover-point guidance</span>
+  </div>
+  <span class="status-pill"><span class="dot"></span>hover-point only — landing not yet implemented</span>
+</div>
+
+<div class="shell">
+
+  <nav class="sidenav" id="sidenav" aria-label="Sections">
+    <ol>
+      <li><a href="#overview" class="navlink"><span class="num">01</span>Overview</a></li>
+      <li><a href="#spacecraft-model" class="navlink"><span class="num">02</span>Spacecraft model</a></li>
+      <li><a href="#dynamics" class="navlink"><span class="num">03</span>Coordinates &amp; dynamics</a></li>
+      <li><a href="#thrusters" class="navlink"><span class="num">04</span>Thruster configuration</a></li>
+      <li><a href="#trajectory-generation" class="navlink"><span class="num">05</span>Trajectory generation</a></li>
+      <li><a href="#trajectory-smoothing" class="navlink"><span class="num">06</span>Trajectory smoothing</a></li>
+      <li><a href="#controller" class="navlink"><span class="num">07</span>TV-LQR controller</a></li>
+      <li><a href="#simulation" class="navlink"><span class="num">08</span>Simulation results</a></li>
+      <li><a href="#status" class="navlink"><span class="num">09</span>Limitations &amp; status</a></li>
+      <li><a href="#future-work" class="navlink"><span class="num">10</span>Future work</a></li>
+    </ol>
+    <div class="foot-links">
+      <a href="https://github.com/YOUR-USERNAME/YOUR-REPO" id="repo-link">↗ Source on GitHub</a>
+      <a href="#">↗ CV / résumé</a>
+      <a href="#">↗ Contact</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <section class="hero">
+      <div class="eyebrow">GUIDANCE, NAVIGATION &amp; CONTROL — SMALL-BODY PROXIMITY OPERATIONS</div>
+      <h1>Autonomous 6-DOF guidance to a hover point above Bennu</h1>
+      <p class="lede">
+        A self-contained pipeline that takes a shape and gravity model of asteroid 101955 Bennu, picks a
+        landing site, plans a collision-free approach through the local gravity field, and flies a
+        thruster-actuated spacecraft to a stable hover point above it — closed-loop, with a time-varying
+        LQR regulator built on the full nonlinear rigid-body dynamics.
+      </p>
+      <div class="meta-row">
+        <span><b>Body:</b> 101955 Bennu</span>
+        <span><b>DOF:</b> 6 (12-state)</span>
+        <span><b>Actuators:</b> 10 thrusters</span>
+        <span><b>Stack:</b> Python · NumPy/SciPy · SymPy · python-control · trimesh</span>
+        <span><b>Status:</b> hover point reached, touchdown not modeled</span>
+      </div>
+    </section>
+
+    <!-- 01 OVERVIEW -->
+    <section id="overview">
+      <div class="section-head"><span class="num">01</span><h2>Overview</h2></div>
+      <p>
+        This project plans and flies a trajectory for a small thruster-actuated spacecraft operating near
+        asteroid Bennu, using only a precomputed polyhedral shape model and its spherical-harmonic gravity
+        field. Given those two inputs, the pipeline:
+      </p>
+      <ul>
+        <li>scores candidate landing sites on slope, local gravity shear, gravity variability, gravity magnitude and surface roughness;</li>
+        <li>plans a path through 3-D space with A*, weighted by local gravity and biased toward a clean final approach vector;</li>
+        <li>prunes and smooths that path into a flyable, minimum-jerk trajectory in position, velocity and acceleration;</li>
+        <li>derives the full nonlinear 6-DOF equations of motion symbolically and linearizes them along the trajectory; and</li>
+        <li>tracks the trajectory with a time-varying LQR gain schedule, verified in closed-loop simulation.</li>
+      </ul>
+      <div class="callout">
+        <b>Where it stops today:</b> the pipeline is complete up to a hover point roughly 300&nbsp;m above the
+        chosen landing site, offset along a tilted approach vector. It does not yet descend to the surface —
+        see <a href="#status">Limitations &amp; status</a>.
+      </div>
+    </section>
+
+    <!-- 02 SPACECRAFT MODEL -->
+    <section id="spacecraft-model">
+      <div class="section-head"><span class="num">02</span><h2>Spacecraft model</h2></div>
+      <p>
+        The vehicle is modeled as a rigid body with a diagonal inertia tensor and ten fixed thrusters arranged
+        around a square frame. Mass, inertia and geometry are parameters to the whole pipeline, not hardcoded
+        constants, so the same code can be re-run for a different vehicle.
+      </p>
+      <div class="stat-grid">
+        <div class="stat"><div class="v">50 kg</div><div class="l">mass</div></div>
+        <div class="stat"><div class="v">diag(6, 6, 6)</div><div class="l">inertia [kg·m²]</div></div>
+        <div class="stat"><div class="v">0.6 m</div><div class="l">arm length, a</div></div>
+        <div class="stat"><div class="v">10</div><div class="l">thrusters</div></div>
+        <div class="stat"><div class="v">1000 m</div><div class="l">standoff / grid padding</div></div>
+      </div>
+    </section>
+
+    <!-- 03 DYNAMICS -->
+    <section id="dynamics">
+      <div class="section-head"><span class="num">03</span><h2>Coordinate systems &amp; dynamics</h2></div>
+      <p>
+        The state is a 12-vector of position and Euler attitude, plus their rates. The equations of motion are
+        derived symbolically with SymPy via the Euler–Lagrange method — not hand-linearized — so the same
+        derivation produces both the nonlinear model used for simulation and the exact Jacobians used for
+        control.
+      </p>
+      <div class="formula">state   x = [ x, y, z, θ, ψ, φ,  ẋ, ẏ, ż, θ̇, ψ̇, φ̇ ]ᵀ    <span class="c">// 12 states</span>
+control u = [ T1, T2, … , T10 ]ᵀ                     <span class="c">// 10 thrusts</span>
+
+M(q) q̈ + C(q, q̇) = J_Tᵀ (S·f_thrust) + J_Rᵀ τ + J_Tᵀ (m·g(q))</div>
+      <p>
+        The rotation from body to world, <code>S = Rx·Ry·Rz</code>, also rotates the inertia tensor into the
+        world frame, and the angular-velocity Jacobian is built by extracting the axial (vee) vector from each
+        <code>∂S/∂qᵢ · Sᵀ</code>. <code>g(q)</code> is the local gravity vector, trilinearly interpolated at
+        runtime from the precomputed Bennu gravity grid described in <a href="#trajectory-generation">05</a>.
+      </p>
+      <p>
+        Mass matrix <code>M(q)</code>, Coriolis/centrifugal terms, and the thrust-and-gravity Jacobians
+        <code>A(t) = ∂ẋ/∂x</code> and <code>B(t) = ∂ẋ/∂u</code> are all lambdified from the symbolic model and
+        evaluated numerically along the nominal trajectory, producing a <b style="color:var(--text)">time-varying
+        linear model</b> rather than a single linearization point.
+      </p>
+    </section>
+
+    <!-- 04 THRUSTERS -->
+    <section id="thrusters">
+      <div class="section-head"><span class="num">04</span><h2>Thruster configuration</h2></div>
+      <div class="twocol">
+        <div>
+          <p>
+            Ten fixed thrusters (T1–T10) map into body-frame force and torque through the frame geometry.
+            Eight lateral thrusters produce in-plane force and yaw/pitch/roll torque in antagonistic pairs;
+            two axial thrusters (T9, T10) produce the differential vertical force. Torque scales with the
+            half arm length, <code>a/2 = 0.3 m</code>.
+          </p>
+          <div class="formula">f_thrust = [ T4+T7−T5−T2,  T3+T6−T8−T1,  T9−T10 ]ᵀ
+
+τ = (a/2) · [ (T1+T6)−(T3+T8),
+              (T4+T5)−(T2+T7),
+              (T5+T8+T7+T6)−(T1+T4+T3+T2) ]ᵀ</div>
+          <p>
+            Nominal thrust for a given trajectory point is solved as a least-norm allocation problem —
+            a Tikhonov-regularized pseudo-inverse of the 6×10 thrust map (<code>λ = 1e-4</code>) — rather
+            than an optimizer, which is fast enough to run at every trajectory sample but doesn't yet enforce
+            per-thruster saturation.
+          </p>
+        </div>
+        <div>
+          <div class="diagram-slot">
+            <b>Spacecraft / thruster layout diagram</b>
+            Replace this block with the hand-drawn frame diagram —<br>
+            drop an image at <code>assets/thruster-diagram.png</code><br>
+            and swap the placeholder &lt;div&gt; below for an &lt;img&gt; tag.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 TRAJECTORY GENERATION -->
+    <section id="trajectory-generation">
+      <div class="section-head"><span class="num">05</span><h2>Trajectory generation</h2></div>
+      <p>
+        Everything upstream of control runs offline, over Bennu's known shape and gravity field, to produce a
+        single flyable path from a start position to a hover point above the selected landing site.
+      </p>
+
+      <div class="pipeline" role="img" aria-label="Pipeline: shape model, gravity field, occupancy grid, landing site selection, A* search, path pruning, B-spline fit, arc-length trajectory, nominal attitude">
+        <svg viewBox="0 0 1160 150" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#3d4a5a"/>
+            </marker>
+          </defs>
+          <!-- connecting line -->
+          <line x1="60" y1="75" x2="1100" y2="75" stroke="#212a36" stroke-width="1.5"/>
+          <!-- nodes -->
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5">
+            <!-- 1 -->
+            <circle cx="60" cy="75" r="7" fill="#0a0d12" stroke="#e2a857" stroke-width="2"/>
+            <text x="60" y="45" fill="#dde4ec" text-anchor="middle" font-size="11">Shape model</text>
+            <text x="60" y="102" fill="#57616f" text-anchor="middle">shape_obj.py</text>
+            <!-- 2 -->
+            <circle cx="290" cy="75" r="7" fill="#0a0d12" stroke="#5b93b0" stroke-width="2"/>
+            <text x="290" y="45" fill="#dde4ec" text-anchor="middle" font-size="11">Gravity field</text>
+            <text x="290" y="102" fill="#57616f" text-anchor="middle">Bennu_gravity_model.py</text>
+            <!-- 3 -->
+            <circle cx="520" cy="75" r="7" fill="#0a0d12" stroke="#5b93b0" stroke-width="2"/>
+            <text x="520" y="45" fill="#dde4ec" text-anchor="middle" font-size="11">Occupancy grid</text>
+            <text x="520" y="102" fill="#57616f" text-anchor="middle">occupany_grid.py</text>
+            <!-- 4 -->
+            <circle cx="750" cy="75" r="7" fill="#0a0d12" stroke="#e2a857" stroke-width="2"/>
+            <text x="750" y="45" fill="#dde4ec" text-anchor="middle" font-size="11">Landing-site score</text>
+            <text x="750" y="102" fill="#57616f" text-anchor="middle">landing_map.py</text>
+            <!-- 5 -->
+            <circle cx="980" cy="75" r="7" fill="#0a0d12" stroke="#e2a857" stroke-width="2"/>
+            <text x="980" y="45" fill="#dde4ec" text-anchor="middle" font-size="11">A* search</text>
+            <text x="980" y="102" fill="#57616f" text-anchor="middle">a_star_map.py</text>
+          </g>
+        </svg>
+      </div>
+
+      <table class="file-table">
+        <thead><tr><th>step</th><th>what it does</th></tr></thead>
+        <tbody>
+          <tr><td class="f">shape_obj.py</td><td>Synthesizes Bennu's surface from spherical-harmonic shape coefficients and exports it as an OBJ mesh.</td></tr>
+          <tr><td class="f">Bennu_gravity_model.py</td><td>Computes the gravity field from potential coefficients (degree/order up to 450 near-surface, 30 globally), using a Numba-accelerated associated-Legendre recursion.</td></tr>
+          <tr><td class="f">gravity_Intrep.py</td><td>Trilinearly interpolates the precomputed gravity grid at arbitrary query points — this is what the planner and controller actually call.</td></tr>
+          <tr><td class="f">occupany_grid.py</td><td>Ray-casts against the mesh (Embree-accelerated when available) to voxelize solid space, then dilates it for clearance margin.</td></tr>
+          <tr><td class="f">landing_map.py</td><td>Scores every mesh face on slope, tangential gravity, local gravity variability, gravity magnitude and roughness, and picks the minimum-cost site.</td></tr>
+          <tr><td class="f">a_star_map.py</td><td>26-connected 3-D A* over the occupancy grid; cost blends terrain/gravity cost with a penalty that increasingly rewards heading toward the final approach vector near the site.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 06 TRAJECTORY SMOOTHING -->
+    <section id="trajectory-smoothing">
+      <div class="section-head"><span class="num">06</span><h2>Trajectory smoothing</h2></div>
+      <p>
+        A* returns a grid-aligned, geometrically jagged path — not something a controller should try to track
+        directly. Two passes turn it into a flight-ready reference:
+      </p>
+      <ol class="steps">
+        <li><b style="color:var(--text)">Pruning</b> (<code>path_pruning.py</code>) — greedily removes waypoints whenever a straight line between two non-adjacent points stays collision-free, tested with sampled line-of-sight checks against the occupancy grid.</li>
+        <li><b style="color:var(--text)">B-spline fit</b> (<code>path_generation.py</code>) — fits a spline through the pruned waypoints, pinning the endpoints to the actual start position and the offset hover point.</li>
+        <li><b style="color:var(--text)">Time parameterization</b> (<code>Trajectory_gen.py</code>) — reparameterizes by arc length, then applies a quintic (minimum-jerk) time law, <code>10τ³ − 15τ⁴ + 6τ⁵</code>, over a fixed horizon to get position, velocity and acceleration histories with zero endpoint jerk.</li>
+        <li><b style="color:var(--text)">Attitude profile</b> (<code>nominal_euler_angles_val.py</code>) — points yaw/pitch along the velocity direction, blended smoothly from the vehicle's actual starting orientation using a Gaussian blend window near t = 0.</li>
+      </ol>
+    </section>
+
+    <!-- 07 CONTROLLER -->
+    <section id="controller">
+      <div class="section-head"><span class="num">07</span><h2>TV-LQR controller</h2></div>
+      <p>
+        The smoothed trajectory is only a reference — it isn't dynamically consistent with the full nonlinear
+        model, so nominal thrusts and a feedback controller are computed around it.
+      </p>
+      <ul>
+        <li><b style="color:var(--text)">Nominal control</b> (<code>nominal_ctrl_input.py</code>) — inverts the Euler–Lagrange model at each trajectory sample to find the thrusts consistent with the planned acceleration, then maps them to individual thrusters through the least-norm allocator.</li>
+        <li><b style="color:var(--text)">Linearization</b> (<code>linearizer.py</code>) — evaluates the symbolic <code>A(t)</code>, <code>B(t)</code> Jacobians at every sample along the nominal trajectory.</li>
+        <li><b style="color:var(--text)">Controllability check</b> (<code>controllability.py</code>, <code>smooth_ctrl.py</code>) — the controllability matrix's rank and condition number are checked at every sample; ill-conditioned points are patched with their nearest well-conditioned neighbor before gain design.</li>
+        <li><b style="color:var(--text)">Gain scheduling</b> (<code>lqr.py</code>) — each continuous <code>(A, B)</code> pair is discretized with the matrix-exponential (Van Loan) method, then a discrete-time LQR gain <code>K(t)</code> is solved per step with <code>python-control</code>.</li>
+      </ul>
+      <div class="formula">Q = diag( 100,100,100,  500,500,500,  50,50,50,  200,200,200 )   <span class="c">// pos · att · vel · rate</span>
+R = I₁₀
+
+u(t) = u_nom(t) − K(t) · ( x(t) − x_ref(t) )</div>
+      <p>
+        Closed-loop tracking is verified with an RK4 integration of the full linear system
+        (<code>control_sys.py</code>), with the nominal trajectory extended by a fixed hold so the controller's
+        hover-stability can be checked after arrival, not just its trajectory-tracking behavior.
+      </p>
+    </section>
+
+    <!-- 08 SIMULATION -->
+    <section id="simulation">
+      <div class="section-head"><span class="num">08</span><h2>Simulation results</h2></div>
+      <p>
+        Drop your plots in here — each script below already produces the figure named next to it via
+        Matplotlib; swap these placeholders for exported PNGs (e.g. <code>assets/results/*.png</code>).
+      </p>
+      <div class="media-grid">
+        <div class="media-slot">3-D trajectory<br>(path_generation.py / Trajectory_gen.py output)</div>
+        <div class="media-slot">Position tracking error<br>(control_sys.py)</div>
+        <div class="media-slot">Velocity tracking error<br>(control_sys.py)</div>
+        <div class="media-slot">Attitude tracking error<br>(control_sys.py)</div>
+        <div class="media-slot">Thruster commands over time<br>(nominal_ctrl_input.py)</div>
+        <div class="media-slot">Controllability / ‖K‖ along trajectory<br>(controllability.py / lqr.py)</div>
+      </div>
+    </section>
+
+    <!-- 09 STATUS -->
+    <section id="status">
+      <div class="section-head"><span class="num">09</span><h2>Limitations &amp; current status</h2></div>
+      <p>The pipeline runs end-to-end today, but it stops above the surface — it is not a landing controller yet.</p>
+      <ul class="status-list">
+        <li><span class="icon">✕</span>No descent-to-surface or touchdown phase — the controller is only verified for approach-and-hover, ~300 m off the surface.</li>
+        <li><span class="icon">✕</span>No contact, impact or landing-gear/anchoring model.</li>
+        <li><span class="icon">✕</span>Thrust allocation is an unconstrained least-norm solve — no saturation, on/off, or thruster-failure constraints.</li>
+        <li><span class="icon">✕</span>Shape and gravity models are static and precomputed offline — no online mapping, SLAM, or in-flight model update.</li>
+        <li><span class="icon">✕</span>Approach geometry (300 m standoff, 70° tilt, 90° yaw off the surface normal) is fixed, not chosen or optimized per site.</li>
+        <li class="ok"><span class="icon">✓</span>Path planning, trajectory smoothing, full nonlinear 6-DOF dynamics, linearization and TV-LQR tracking are implemented and verified in closed-loop simulation.</li>
+      </ul>
+    </section>
+
+    <!-- 10 FUTURE WORK -->
+    <section id="future-work">
+      <div class="section-head"><span class="num">10</span><h2>Future work</h2></div>
+      <ul>
+        <li>Descent and touchdown guidance from the hover point, with soft-landing velocity and attitude constraints.</li>
+        <li>Contact dynamics and a landing-gear or anchoring model for surface interaction on a low-gravity body.</li>
+        <li>Constrained thrust allocation (e.g. QP-based) that respects per-thruster saturation and degraded/failed thrusters.</li>
+        <li>Online hazard detection and local replanning during descent, rather than a fully precomputed path.</li>
+        <li>Monte Carlo dispersion analysis to quantify robustness margins of the TV-LQR gains.</li>
+        <li>Validation against a higher-fidelity simulator and, ideally, real OSIRIS-REx-derived shape/gravity data.</li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <span>Built with Python — NumPy / SciPy, SymPy, python-control, trimesh, Numba.</span>
+  <span>© <span id="year"></span> — replace with your name.</span>
+</footer>
+
+<script>
+  // mobile nav toggle
+  const toggle = document.getElementById('navtoggle');
+  const nav = document.getElementById('sidenav');
+  toggle && toggle.addEventListener('click', () => nav.classList.toggle('open'));
+  document.querySelectorAll('.navlink').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
+
+  // scrollspy
+  const links = document.querySelectorAll('.navlink');
+  const sections = [...links].map(l => document.querySelector(l.getAttribute('href')));
+  const setActive = () => {
+    let idx = 0;
+    const y = window.scrollY + 120;
+    sections.forEach((s, i) => { if (s && s.offsetTop <= y) idx = i; });
+    links.forEach((l, i) => l.classList.toggle('active', i === idx));
+  };
+  document.addEventListener('scroll', setActive, { passive:true });
+  setActive();
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
