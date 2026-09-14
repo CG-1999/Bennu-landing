@@ -341,9 +341,9 @@
     <section id="overview">
       <div class="section-head"><span class="num">01</span><h2>Overview</h2></div>
       <p>
-        This project plans and flies a trajectory for a small thruster-actuated spacecraft operating near
-        asteroid Bennu, using only a precomputed polyhedral shape model and its spherical-harmonic gravity
-        field. Given those two inputs, the pipeline:
+        This project develops an autonomous guidance and control pipeline for a small thruster-actuated spacecraft near asteroid 101955 Bennu. 
+        Using publicly available/precomputed models of Bennu’s surface geometry and gravity field, I implemented the landing-site selection, 
+        gravity-aware path planning, trajectory generation, nonlinear 6-DOF spacecraft dynamics, and closed-loop time-varying LQR control required to guide the spacecraft to a stable hover point above the surface.
       </p>
       <ul>
         <li>scores candidate landing sites on slope, local gravity shear, gravity variability, gravity magnitude and surface roughness;</li>
