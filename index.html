@@ -535,17 +535,39 @@ u(t) = u_nom(t) − K(t) · ( x(t) − x_ref(t) )</div>
     <section id="simulation">
       <div class="section-head"><span class="num">08</span><h2>Simulation results</h2></div>
       <p>
-        Drop your plots in here — each script below already produces the figure named next to it via
-        Matplotlib; swap these placeholders for exported PNGs (e.g. <code>assets/results/*.png</code>).
+        Planned path, then closed-loop tracking error across all twelve states during the RK4 simulation
+        (<code>control_sys.py</code>), plus the DLQR gain-schedule norm along the trajectory (<code>lqr.py</code>).
       </p>
-      <div class="media-grid">
-        <div class="media-slot">3-D trajectory<br>(path_generation.py / Trajectory_gen.py output)</div>
-        <div class="media-slot">Position tracking error<br>(control_sys.py)</div>
-        <div class="media-slot">Velocity tracking error<br>(control_sys.py)</div>
-        <div class="media-slot">Attitude tracking error<br>(control_sys.py)</div>
-        <div class="media-slot">Thruster commands over time<br>(nominal_ctrl_input.py)</div>
-        <div class="media-slot">Controllability / ‖K‖ along trajectory<br>(controllability.py / lqr.py)</div>
-      </div>
+ 
+      <figure class="figure">
+        <img src="assets/Trajectory.png" alt="3D plot of the A* planned path from the start point to the hover point above Bennu, shown against the Bennu mesh, with the landing point and surface normal marked.">
+        <figcaption><b>Fig. 1 —</b> A* path from the start position to the hover point, plotted against the Bennu mesh. The dashed line marks the surface normal at the selected landing site, offset to the hover point.</figcaption>
+      </figure>
+ 
+      <figure class="figure">
+        <img src="assets/Figure_1.png" alt="Line plots of x, y and z position tracking error in meters over time.">
+        <figcaption><b>Fig. 2 —</b> Position tracking error (x, y, z). The controller drives error to zero during the tracking phase, and again after the hover-hold extension settles.</figcaption>
+      </figure>
+ 
+      <figure class="figure">
+        <img src="assets/Figure_3.png" alt="Line plots of vx, vy and vz velocity tracking error in meters per second over time.">
+        <figcaption><b>Fig. 3 —</b> Velocity tracking error (vx, vy, vz), following the same transient shape as the position error.</figcaption>
+      </figure>
+ 
+      <figure class="figure">
+        <img src="assets/Figure_2.png" alt="Line plots of roll, pitch and yaw attitude tracking error in radians over time.">
+        <figcaption><b>Fig. 4 —</b> Attitude tracking error (roll, pitch, yaw), converging alongside the translational states.</figcaption>
+      </figure>
+ 
+      <figure class="figure">
+        <img src="assets/Figure_4.png" alt="Line plots of wx, wy and wz angular rate tracking error in radians per second over time.">
+        <figcaption><b>Fig. 5 —</b> Angular-rate tracking error (wx, wy, wz).</figcaption>
+      </figure>
+ 
+      <figure class="figure" style="max-width:560px;">
+        <img src="assets/Figure_5.png" alt="Plot of the norm of the DLQR gain matrix K over the trajectory, showing two peaks.">
+        <figcaption><b>Fig. 7 —</b> ‖K‖ of the discrete-time LQR gain schedule along the trajectory. The two peaks line up with the trajectory's higher-curvature segments, where more aggressive feedback is needed to stay on the reference.</figcaption>
+      </figure>
     </section>
 
     <!-- 09 STATUS -->
