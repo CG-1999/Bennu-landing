@@ -544,31 +544,31 @@ u(t) = u_nom(t) − K(t) · ( x(t) − x_ref(t) )</div>
         <figcaption style="margin-top: 8px; font-size: 0.9em; text-align: center; color: #555;"><b>Fig. 1 —</b> A* path from the start position to the hover point, plotted against the Bennu mesh. The dashed line marks the surface normal at the selected landing site, offset to the hover point.</figcaption>
       </figure>
  
-      <figure class="figure">
-        <img src="assets/Figure_1.png" alt="Line plots of x, y and z position tracking error in meters over time.">
-        <figcaption><b>Fig. 2 —</b> Position tracking error (x, y, z). The controller drives error to zero during the tracking phase, and again after the hover-hold extension settles.</figcaption>
+      <figure class="figure" style="margin: 0; width: 100%;">
+        <img src="assets/Figure_1.png" alt="Line plots of x, y and z position tracking error in meters over time." style="width: 100%; height: auto; display: block; border-radius: 4px;">
+        <figcaption style="margin-top: 6px; font-size: 0.85em; text-align: center; color: #555;"><b>Fig. 2 —</b> Position tracking error (x, y, z). The controller drives error to zero during the tracking phase, and again after the hover-hold extension settles.</figcaption>
       </figure>
- 
-      <figure class="figure">
-        <img src="assets/Figure_3.png" alt="Line plots of vx, vy and vz velocity tracking error in meters per second over time.">
-        <figcaption><b>Fig. 3 —</b> Velocity tracking error (vx, vy, vz), following the same transient shape as the position error.</figcaption>
-      </figure>
- 
-      <figure class="figure">
-        <img src="assets/Figure_2.png" alt="Line plots of roll, pitch and yaw attitude tracking error in radians over time.">
-        <figcaption><b>Fig. 4 —</b> Attitude tracking error (roll, pitch, yaw), converging alongside the translational states.</figcaption>
-      </figure>
- 
-      <figure class="figure">
-        <img src="assets/Figure_4.png" alt="Line plots of wx, wy and wz angular rate tracking error in radians per second over time.">
-        <figcaption><b>Fig. 5 —</b> Angular-rate tracking error (wx, wy, wz).</figcaption>
-      </figure>
- 
-      <figure class="figure" style="max-width:560px;">
-        <img src="assets/Figure_5.png" alt="Plot of the norm of the DLQR gain matrix K over the trajectory, showing two peaks.">
-        <figcaption><b>Fig. 7 —</b> ‖K‖ of the discrete-time LQR gain schedule along the trajectory. The two peaks line up with the trajectory's higher-curvature segments, where more aggressive feedback is needed to stay on the reference.</figcaption>
-      </figure>
-    </section>
+
+     <figure class="figure" style="margin: 0; width: 100%;">
+       <img src="assets/Figure_3.png" alt="Line plots of vx, vy and vz velocity tracking error in meters per second over time." style="width: 100%; height: auto; display: block; border-radius: 4px;">
+       <figcaption style="margin-top: 6px; font-size: 0.85em; text-align: center; color: #555;"><b>Fig. 3 —</b> Velocity tracking error (vx, vy, vz), following the same transient shape as the position error.</figcaption>
+     </figure>
+
+     <figure class="figure" style="margin: 0; width: 100%;">
+       <img src="assets/Figure_2.png" alt="Line plots of roll, pitch and yaw attitude tracking error in radians over time." style="width: 100%; height: auto; display: block; border-radius: 4px;">
+       <figcaption style="margin-top: 6px; font-size: 0.85em; text-align: center; color: #555;"><b>Fig. 4 —</b> Attitude tracking error (roll, pitch, yaw), converging alongside the translational states.</figcaption>
+     </figure>
+
+     <figure class="figure" style="margin: 0; width: 100%;">
+       <img src="assets/Figure_4.png" alt="Line plots of wx, wy and wz angular rate tracking error in radians per second over time." style="width: 100%; height: auto; display: block; border-radius: 4px;">
+       <figcaption style="margin-top: 6px; font-size: 0.85em; text-align: center; color: #555;"><b>Fig. 5 —</b> Angular-rate tracking error (wx, wy, wz).</figcaption>
+     </figure>
+
+     <figure class="figure" style="margin: 0; width: 100%;">
+       <img src="assets/Figure_5.png" alt="Plot of the norm of the DLQR gain matrix K over the trajectory, showing two peaks." style="width: 100%; height: auto; display: block; border-radius: 4px;">
+       <figcaption style="margin-top: 6px; font-size: 0.85em; text-align: center; color: #555;"><b>Fig. 7 —</b> ‖K‖ of the discrete-time LQR gain schedule along the trajectory. The two peaks line up with the trajectory's higher-curvature segments, where more aggressive feedback is needed to stay on the reference.</figcaption>
+     </figure>
+  </section>
 
     <!-- 09 STATUS -->
     <section id="status">
