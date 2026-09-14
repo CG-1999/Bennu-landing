@@ -309,11 +309,6 @@
       <li><a href="#status" class="navlink"><span class="num">09</span>Limitations &amp; status</a></li>
       <li><a href="#future-work" class="navlink"><span class="num">10</span>Future work</a></li>
     </ol>
-    <div class="foot-links">
-      <a href="https://github.com/YOUR-USERNAME/YOUR-REPO" id="repo-link">↗ Source on GitHub</a>
-      <a href="#">↗ CV / résumé</a>
-      <a href="#">↗ Contact</a>
-    </div>
   </nav>
 
   <main>
@@ -381,7 +376,7 @@
       <div class="section-head"><span class="num">03</span><h2>Coordinate systems &amp; dynamics</h2></div>
       <p>
         The state is a 12-vector of position and Euler attitude, plus their rates. The equations of motion are
-        derived symbolically with SymPy via the Euler–Lagrange method — not hand-linearized — so the same
+        derived symbolically with SymPy via the Euler–Lagrange method, not hand-linearized, so the same
         derivation produces both the nonlinear model used for simulation and the exact Jacobians used for
         control.
       </p>
@@ -486,7 +481,7 @@ M(q) q̈ + C(q, q̇) = J_Tᵀ (S·f_thrust) + J_Rᵀ τ + J_Tᵀ (m·g(q))</div>
           <tr><td class="f">shape_obj.py</td><td>Synthesizes Bennu's surface from spherical-harmonic shape coefficients and exports it as an OBJ mesh.</td></tr>
           <tr><td class="f">Bennu_gravity_model.py</td><td>Computes the gravity field from potential coefficients (degree/order up to 450 near-surface, 30 globally), using a Numba-accelerated associated-Legendre recursion.</td></tr>
           <tr><td class="f">gravity_Intrep.py</td><td>Trilinearly interpolates the precomputed gravity grid at arbitrary query points — this is what the planner and controller actually call.</td></tr>
-          <tr><td class="f">occupany_grid.py</td><td>Ray-casts against the mesh (Embree-accelerated when available) to voxelize solid space, then dilates it for clearance margin.</td></tr>
+          <tr><td class="f">occupany_grid.py</td><td>Ray-casts against the mesh to voxelize solid space, then dilates it for clearance margin.</td></tr>
           <tr><td class="f">landing_map.py</td><td>Scores every mesh face on slope, tangential gravity, local gravity variability, gravity magnitude and roughness, and picks the minimum-cost site.</td></tr>
           <tr><td class="f">a_star_map.py</td><td>26-connected 3-D A* over the occupancy grid; cost blends terrain/gravity cost with a penalty that increasingly rewards heading toward the final approach vector near the site.</td></tr>
         </tbody>
@@ -580,7 +575,7 @@ u(t) = u_nom(t) − K(t) · ( x(t) − x_ref(t) )</div>
         <li><span class="icon">✕</span>No contact, impact or landing-gear/anchoring model.</li>
         <li><span class="icon">✕</span>Thrust allocation is an unconstrained least-norm solve — no saturation, on/off, or thruster-failure constraints.</li>
         <li><span class="icon">✕</span>Shape and gravity models are static and precomputed offline — no online mapping, SLAM, or in-flight model update.</li>
-        <li><span class="icon">✕</span>Approach geometry (300 m standoff, 70° tilt, 90° yaw off the surface normal) is fixed, not chosen or optimized per site.</li>
+        <li><span class="icon">✕</span>Approach geometry (300 m standoff, 20° tilt, 90° yaw off the surface normal) is fixed, not chosen or optimized per site.</li>
         <li class="ok"><span class="icon">✓</span>Path planning, trajectory smoothing, full nonlinear 6-DOF dynamics, linearization and TV-LQR tracking are implemented and verified in closed-loop simulation.</li>
       </ul>
     </section>
@@ -591,7 +586,7 @@ u(t) = u_nom(t) − K(t) · ( x(t) − x_ref(t) )</div>
       <ul>
         <li>Descent and touchdown guidance from the hover point, with soft-landing velocity and attitude constraints.</li>
         <li>Contact dynamics and a landing-gear or anchoring model for surface interaction on a low-gravity body.</li>
-        <li>Constrained thrust allocation (e.g. QP-based) that respects per-thruster saturation and degraded/failed thrusters.</li>
+        <li>Constrained thrust allocation that respects per-thruster saturation and degraded/failed thrusters.</li>
         <li>Online hazard detection and local replanning during descent, rather than a fully precomputed path.</li>
         <li>Monte Carlo dispersion analysis to quantify robustness margins of the TV-LQR gains.</li>
         <li>Validation against a higher-fidelity simulator and, ideally, real OSIRIS-REx-derived shape/gravity data.</li>
