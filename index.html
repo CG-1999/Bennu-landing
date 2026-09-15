@@ -515,7 +515,7 @@ M(q) q̈ + C(q, q̇) = J_Tᵀ (S·f_thrust) + J_Rᵀ τ + J_Tᵀ (m·g(q))</div>
         <li><b style="color:var(--text)">Nominal control</b> (<code>nominal_ctrl_input.py</code>) — inverts the Euler–Lagrange model at each trajectory sample to find the thrusts consistent with the planned acceleration, then maps them to individual thrusters through the least-norm allocator.</li>
         <li><b style="color:var(--text)">Linearization</b> (<code>linearizer.py</code>) — evaluates the symbolic <code>A(t)</code>, <code>B(t)</code> Jacobians at every sample along the nominal trajectory.</li>
         <li><b style="color:var(--text)">Controllability check</b> (<code>controllability.py</code>, <code>smooth_ctrl.py</code>) — the controllability matrix's rank and condition number are checked at every sample; ill-conditioned points are patched with their nearest well-conditioned neighbor before gain design.</li>
-        <li><b style="color:var(--text)">Gain scheduling</b> (<code>lqr.py</code>) — each continuous <code>(A, B)</code> pair is discretized with the matrix-exponential (Van Loan) method, then a discrete-time LQR gain <code>K(t)</code> is solved per step with <code>python-control</code>.</li>
+        <li><b style="color:var(--text)">Gain scheduling</b> (<code>lqr.py</code>) — each continuous <code>(A, B)</code> pair is discretized with the matrix-exponential method, then a discrete-time LQR gain <code>K(t)</code> is solved per step with <code>python-control</code>.</li>
       </ul>
       <div class="formula">Q = diag( 100,100,100,  500,500,500,  50,50,50,  200,200,200 )   <span class="c">// pos · att · vel · rate</span>
 R = I₁₀
